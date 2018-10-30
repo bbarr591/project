@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Read in the temperature data to drive the model
+data = np.genfromtxt('Grimsfjall.dat', delimiter=',', skip_header=1)
+tempdata = data[20483:len(data),3]
+days = (len(tempdata)-(len(tempdata))%96)/96
+days = int(days)
+dailytemp = np.zeros(days)
+ab = 0 # start of daily average temperature
+cd = 95 # end of daily average temperature
+
+for n in range(0,days):
+    dailytemp[n]= np.average(tempdata[ab:cd])
+    ab+= 96
+    cd+= 96
+
+# Define variables
+s = 0.25 #Thermal Diffusivity
+tsteps = 18250 #50 years
+T = np.zeros((tsteps,20))
+#T[:365,0]= dailytemp # DRIVING temperatures for the first year
+Tshape = np.shape(T)
+
+surface_temp=np.zeros(Tshape[0])
+ab=0
+cd=365
+for n in range(0,50): #Loop 2015 temp data for 50 years
+    surface_temp[ab:cd]= dailytemp
+    ab+=365
+    cd+=365
+T[:,0]= surface_temp
+
+for n in range(0,tsteps-1):
+    for i in range(0,Tshape[1]-1):
+        T[n+1,i]= T[n,i]+s*(T[n,i+1]-2*T[n,i]+T[n,i-1])
+        T[:,0]= surface_temp
+       
+plt.figure()
+in_situ= np.genfromtxt('Hitamaeling_Bardabunga_20150607.txt', delimiter=';', skip_header=1)
+plt.plot(in_situ[:,3],in_situ[:,5], label='In-situ Data from Bárðarbunga')
+
+#Year 1
+disp_tstep=int(157)      
+yearnum=np.floor((disp_tstep+1)/365)+1
+daynum=(disp_tstep+1)%365
+plt.plot(np.arange(0,20,1),T[disp_tstep,0:Tshape[1]], label='Year 1')
+
+#Year 2
+disp_tstep=int(522)    
+yearnum=np.floor((disp_tstep+1)/365)+1
+daynum=(disp_tstep+1)%365
+plt.plot(np.arange(0,20,1),T[disp_tstep,0:Tshape[1]], '-g', label='Year 2')
+
+#Year 3
+disp_tstep=int(887)      
+yearnum=np.floor((disp_tstep+1)/365)+1
+daynum=(disp_tstep+1)%365
+
+plt.plot(np.arange(0,20,1),T[disp_tstep,0:Tshape[1]], '-r', label='Year 3')
+plt.legend(loc='lower right')
+plt.xlabel('Depth (m)')
+plt.ylabel('Temperature ($^\circ$C)')
+plt.title('Numerical Model Driven with Data from \n Grímsfjall')
+plt.xlim(0,20)
+plt.grid(True)
+plt.show()
